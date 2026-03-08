@@ -171,12 +171,12 @@ input[type="range"]::-webkit-slider-thumb {
         <input type="range" id="count-large" min="0" max="4" value="1" oninput="updateCount('large', this.value)">
       </div>
       <div>
-        <div class="slider-label"><span>Medium</span><span class="slider-val" id="count-medium-val">1</span></div>
-        <input type="range" id="count-medium" min="0" max="6" value="1" oninput="updateCount('medium', this.value)">
+        <div class="slider-label"><span>Medium</span><span class="slider-val" id="count-medium-val">2</span></div>
+        <input type="range" id="count-medium" min="0" max="6" value="2" oninput="updateCount('medium', this.value)">
       </div>
       <div>
-        <div class="slider-label"><span>Small</span><span class="slider-val" id="count-small-val">2</span></div>
-        <input type="range" id="count-small" min="0" max="10" value="2" oninput="updateCount('small', this.value)">
+        <div class="slider-label"><span>Small</span><span class="slider-val" id="count-small-val">3</span></div>
+        <input type="range" id="count-small" min="0" max="10" value="3" oninput="updateCount('small', this.value)">
       </div>
       <div>
         <div class="slider-label"><span>Tiny</span><span class="slider-val" id="count-tiny-val">5</span></div>
@@ -200,26 +200,26 @@ input[type="range"]::-webkit-slider-thumb {
         <input type="range" id="size-small" min="4" max="40" value="12" oninput="updateSize('small', this.value)">
       </div>
       <div>
-        <div class="slider-label"><span>Tiny</span><span class="slider-val" id="size-tiny-val">8%</span></div>
-        <input type="range" id="size-tiny" min="2" max="24" value="8" oninput="updateSize('tiny', this.value)">
+        <div class="slider-label"><span>Tiny</span><span class="slider-val" id="size-tiny-val">7%</span></div>
+        <input type="range" id="size-tiny" min="2" max="24" value="7" oninput="updateSize('tiny', this.value)">
       </div>
     </div>
   </div>
   <div class="panel-section">
     <div class="panel-title">Logo Randomness</div>
-    <div class="slider-label"><span>Uniform</span><span class="slider-val" id="logo-random-val">65%</span><span>Chaotic</span></div>
-    <input type="range" id="logo-random" min="0" max="100" value="65" oninput="updateLogoRandomness(this.value)">
+    <div class="slider-label"><span>Uniform</span><span class="slider-val" id="logo-random-val">100%</span><span>Chaotic</span></div>
+    <input type="range" id="logo-random" min="0" max="100" value="100" oninput="updateLogoRandomness(this.value)">
   </div>
   <div class="panel-section">
     <div class="panel-title">Highlight</div>
-    <div class="slider-label"><span>Base Size</span><span class="slider-val" id="hl-size-val">74%</span></div>
-    <input type="range" id="hl-size" min="20" max="120" value="74" oninput="updateHighlight('baseSize', this.value)">
+    <div class="slider-label"><span>Base Size</span><span class="slider-val" id="hl-size-val">115%</span></div>
+    <input type="range" id="hl-size" min="20" max="120" value="115" oninput="updateHighlight('baseSize', this.value)">
     <div class="slider-label"><span>Move Speed</span><span class="slider-val" id="hl-move-speed-val">36%</span></div>
     <input type="range" id="hl-move-speed" min="20" max="220" value="36" oninput="updateHighlight('moveSpeed', this.value)">
-    <div class="slider-label"><span>Move Randomness</span><span class="slider-val" id="hl-move-rand-val">100%</span></div>
-    <input type="range" id="hl-move-rand" min="0" max="100" value="100" oninput="updateHighlight('moveRandomness', this.value)">
-    <div class="slider-label"><span>Size Speed</span><span class="slider-val" id="hl-size-speed-val">220%</span></div>
-    <input type="range" id="hl-size-speed" min="20" max="220" value="220" oninput="updateHighlight('sizeSpeed', this.value)">
+    <div class="slider-label"><span>Move Randomness</span><span class="slider-val" id="hl-move-rand-val">18%</span></div>
+    <input type="range" id="hl-move-rand" min="0" max="100" value="18" oninput="updateHighlight('moveRandomness', this.value)">
+    <div class="slider-label"><span>Size Speed</span><span class="slider-val" id="hl-size-speed-val">51%</span></div>
+    <input type="range" id="hl-size-speed" min="20" max="220" value="51" oninput="updateHighlight('sizeSpeed', this.value)">
     <div class="slider-label"><span>Size Randomness</span><span class="slider-val" id="hl-size-rand-val">90%</span></div>
     <input type="range" id="hl-size-rand" min="0" max="100" value="90" oninput="updateHighlight('sizeRandomness', this.value)">
   </div>
@@ -242,14 +242,14 @@ const tiers = ['large', 'medium', 'small', 'tiny'];
 
 const settings = {
   animationSpeed: 0.56,
-  logoRandomness: 0.65,
-  counts: { large: 1, medium: 1, small: 2, tiny: 5 },
-  sizes: { large: 0.47, medium: 0.32, small: 0.12, tiny: 0.08 },
+  logoRandomness: 1,
+  counts: { large: 1, medium: 2, small: 3, tiny: 5 },
+  sizes: { large: 0.47, medium: 0.32, small: 0.12, tiny: 0.07 },
   highlight: {
-    baseSize: 0.74,
+    baseSize: 1.15,
     moveSpeed: 0.36,
-    moveRandomness: 1,
-    sizeSpeed: 2.2,
+    moveRandomness: 0.18,
+    sizeSpeed: 0.51,
     sizeRandomness: 0.9
   }
 };
