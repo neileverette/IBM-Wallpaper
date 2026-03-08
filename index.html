@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBM Wallpaper</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #073E85; }
+canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+
+#panel-tab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 50px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px 0 0 4px;
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, right 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+#panel-tab:hover { background: rgba(255,255,255,0.2); }
+#panel-tab::after {
+  content: '';
+  border: solid rgba(255,255,255,0.5);
+  border-width: 0 1.5px 1.5px 0;
+  display: inline-block;
+  padding: 2.5px;
+  transform: rotate(135deg);
+  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+#panel-tab.open { right: 240px; }
+#panel-tab.open::after { transform: rotate(-45deg); }
+
+#panel {
+  position: fixed;
+  right: -240px;
+  top: 0;
+  width: 240px;
+  height: 100%;
+  background: rgba(7, 30, 65, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 99;
+  transition: right 0.4s cubic-bezier(0.4,0,0.2,1);
+  padding: 40px 20px;
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+}
+#panel.open { right: 0; }
+
+.panel-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+.panel-section { display: flex; flex-direction: column; gap: 6px; }
+
+.toggle-container {
+  display: flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.toggle-btn {
+  flex: 1;
+  padding: 10px 6px;
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+.toggle-btn.active {
+  background: rgba(74, 162, 230, 0.2);
+  color: rgba(255,255,255,0.9);
+}
+.toggle-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.6);
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+}
+.slider-val {
+  color: rgba(74, 162, 230, 0.8);
+  font-variant-numeric: tabular-nums;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.08);
+  outline: none;
+  margin-top: 6px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4AA2E6;
+  cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.15);
+  box-shadow: 0 0 8px rgba(74, 162, 230, 0.3);
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="panel-tab" onclick="togglePanel()"></div>
+<div id="panel">
+  <div class="panel-section">
+    <div class="panel-title">Logo Style</div>
+    <div class="toggle-container">
+      <button class="toggle-btn active" id="btn-classic" onclick="setLogo('classic')">Classic</button>
+      <button class="toggle-btn" id="btn-rebus" onclick="setLogo('rebus')">Rebus</button>
+    </div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-title">Density</div>
+    <div class="slider-label"><span>Sparse</span><span class="slider-val" id="density-val">5</span><span>Dense</span></div>
+    <input type="range" id="density" min="2" max="20" value="5" oninput="updateDensity(this.value)">
+  </div>
+  <div class="panel-section">
+    <div class="panel-title">Randomness</div>
+    <div class="slider-label"><span>Uniform</span><span class="slider-val" id="random-val">50</span><span>Chaotic</span></div>
+    <input type="range" id="randomness" min="0" max="100" value="50" oninput="updateRandomness(this.value)">
+  </div>
+</div>
+
+<script>
+// --- SVG strings (white fill) ---
+const classicSVGStr = `<svg xmlns="http://www.w3.org/2000/svg" width="1609" height="652" viewBox="0 0 1609 652" fill="none"><path d="M1608.01 651.479H1387.46V605.886H1608.01V651.479ZM0.017973 605.403C0.0180341 605.403 311.837 605.674 312.262 605.539C312.262 605.697 312.126 650.793 312.262 650.881C311.874 650.881 0.103541 651.068 0.017973 650.966C-0.0501562 650.813 0.103549 605.403 0.017973 605.403ZM1255.71 650.553L1249.43 650.553L1233.44 604.96H1272.14L1255.71 650.553ZM1116.4 650.475L895.855 650.475L895.855 604.881L1116.4 604.881L1116.4 650.475ZM806.46 604.742C776.084 633.463 734.401 649.657 689.506 650.285L352.715 650.183L352.647 604.691L806.46 604.742ZM1607.27 564.74H1386.73L1386.73 519.147H1607.27V564.74ZM854.701 518.984C851.399 534.018 848.39 552.354 837.284 564.578H353.172V518.984H854.701ZM1116.13 564L895.582 564L895.582 518.407L1116.13 518.407V564ZM312.674 519.298C312.538 519.342 312.811 563.848 312.674 563.798H0.452543L0.452543 519.265C0.945772 519.265 312.261 519.298 312.674 519.298ZM1285.16 562.983L1217.44 562.983L1201.17 518.45L1300.84 518.45L1285.16 562.983ZM221.662 478.702L87.5326 478.702V433.109L221.662 433.109V478.702ZM850.431 432.835C856.986 446.508 857.668 462.79 858.965 478.429H715.293L715.293 432.835L850.431 432.835ZM1116.56 478.089L984.555 478.089L984.555 432.496H1116.56V478.089ZM580.467 432.464C580.467 432.464 580.588 478.007 580.467 478.058C580.346 478.058 443.491 477.989 443.218 478.04C443.218 477.788 443.201 432.481 443.218 432.464L580.467 432.464ZM1518.94 477.776H1386.93L1386.93 432.183H1518.94V477.776ZM1329.46 431.906C1329.2 431.875 1313.15 477.231 1313.12 477.451C1312.89 477.636 1187.79 477.231 1187.67 477.23C1187.63 477.127 1171.19 431.872 1171.48 431.906H1329.46ZM1520.05 392.098H1388.04L1388.04 346.504H1520.05L1520.05 392.098ZM1115.93 346.481C1116.11 346.481 1115.98 391.982 1115.98 392.063C1115.98 392.097 984.167 392.046 984.017 392.063L984.017 346.481H1115.93ZM791.896 346.261C807.763 359.355 822.116 375.479 833.336 391.842C832.831 391.825 444.219 391.876 444.219 391.842C444.219 391.671 444.202 346.295 444.202 346.261L791.896 346.261ZM220.471 391.699C220.352 391.699 86.3412 391.683 86.3412 391.683C86.3755 391.683 86.3412 346.105 86.3412 346.105L220.471 346.105L220.471 391.699ZM1360.2 345.892C1359.58 345.807 1344.75 391.359 1344.13 391.399L1156.2 391.484C1156.06 391.416 1139.67 345.807 1139.66 345.892H1360.2ZM1249.46 303.147C1249.55 303.126 1264.59 260.553 1264.63 260.637H1519.23L1519.23 306.23L1387.31 306.23C1387.31 306.162 1387.24 271.606 1387.24 271.486L1375.05 306.23L1125.88 306.162L1113.69 271.486C1113.69 271.606 1113.74 306.162 1113.7 306.23L981.123 306.23L981.123 260.637H1233.78L1249.46 303.147ZM221.84 305.562H87.7113V259.968H221.84L221.84 305.562ZM831.127 259.786C822.695 275.035 807.366 293.555 792.826 305.315C792.826 305.315 444.716 305.383 444.663 305.315C444.663 305.247 444.68 259.914 444.68 259.786L831.127 259.786ZM831.147 259.786H831.127C831.134 259.775 831.141 259.763 831.147 259.752L831.147 259.786ZM1221.88 221.635H984.37V176.041L1205.61 176.041L1221.88 221.635ZM857.282 175.975C857.282 191.613 855.283 207.895 850.665 221.568L713.609 221.568L713.609 175.975L857.282 175.975ZM1520.24 175.887L1520.24 221.311L1280.08 221.412L1296.44 175.818L1520.24 175.887ZM220.967 221.189L86.8373 221.189V175.596L220.967 175.596L220.967 221.189ZM578.96 220.35L444.83 220.35V174.757H578.96V220.35ZM1190.54 133.446H894.71L894.71 87.8525L1174.35 87.8525L1190.54 133.446ZM312.985 133.445L1.25235 133.445L1.25235 88.9121L312.985 88.9121V133.445ZM838.445 88.7891C844.379 103.495 851.412 116.055 851.412 133.322L353.065 133.322L353.065 88.7891L838.445 88.7891ZM1608.11 132.573H1310.7C1310.7 132.573 1326.91 86.9965 1326.82 86.9795L1608.11 86.9795L1608.11 132.573ZM1608.45 46.7578L1339.66 46.7578L1356.23 1.16406L1608.45 1.16406L1608.45 46.7578ZM1158.91 46.3018C1158.92 46.2342 896.077 46.3524 896.051 46.3018C896.051 46.2342 895.898 0.754883 895.966 0.754883L1142.74 0.72168L1158.91 46.3018ZM697.596 0.682617C738.511 4.57102 774.096 18.9411 804.401 46.2441C804.401 46.2441 354.743 46.2779 354.298 46.2441L354.298 0.666016L697.596 0.682617ZM312.589 45.5938L0.85684 45.5938L0.85684 0L312.589 0V45.5938Z" fill="white"/></svg>`;
+
+const rebusSVGStr = `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="804" viewBox="0 0 360 804" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M180.163 133.596C199.802 133.596 215.719 117.647 215.719 97.9703C215.719 78.2931 199.802 62.3447 180.163 62.3447C160.525 62.3447 144.607 78.2931 144.607 97.9703C144.607 117.647 160.525 133.596 180.163 133.596Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M180.001 17.8128C224.185 17.8128 260.001 53.6996 260.001 97.9703C260.001 142.241 224.185 178.128 180.001 178.128C135.817 178.128 100.001 142.241 100.001 97.9703C100.001 53.6996 135.817 17.8128 180.001 17.8128ZM180.001 195.941C243.95 195.941 298.808 155.537 322.224 97.9703C298.808 40.4033 243.95 0 180.001 0C116.052 0 61.1937 40.4033 37.7783 97.9703C61.1937 155.537 116.052 195.941 180.001 195.941Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M180.001 803.802L186.401 785.435H173.66L180.001 803.802Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M167.81 768.74H192.252L198.684 750.373H161.374L167.81 768.74Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M155.525 733.677H204.537L210.973 715.311H149.09L155.525 733.677Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M143.238 698.616H216.822L223.258 680.249H136.802L143.238 698.616Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M162.709 610.125H70.0508V628.492H169.081L162.709 610.125Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M203.146 593.428H326.67V575.061H209.518L203.146 593.428Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M215.314 558.367H326.67V540H221.686L215.314 558.367Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M33.3911 803.802H125.038V785.435H33.3911V803.802Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M33.3911 768.742H125.038V750.375H33.3911V768.742Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M70.0488 733.678H125.038V715.312H70.0488V733.678Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M70.0488 698.616H125.038V680.249H70.0488V698.616Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M290.009 610.125H197.351L190.979 628.492H290.009V610.125Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M235.021 663.553H290.01V645.186H235.021H185.184L180.032 660.034L174.876 645.186H125.039H70.0503V663.553H125.039V646.674L130.953 663.553H229.107L235.021 646.678V663.553Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M235.02 698.616H290.008V680.249H235.02V698.616Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M235.02 733.678H290.008V715.312H235.02V733.678Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M235.02 768.742H326.666V750.375H235.02V768.742Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M235.02 803.802H326.666V785.435H235.02V803.802Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M33.3916 593.428H156.916L150.54 575.061H33.3916V593.428Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M138.373 540.002H33.3926V558.369H144.745L138.373 540.002Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M173.234 260.461C173.234 245.731 161.319 233.793 146.618 233.793C131.918 233.793 119.999 245.731 119.999 260.461C119.999 275.19 131.918 287.128 146.618 287.128C161.319 287.128 173.234 275.19 173.234 260.461Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M213.385 233.793C198.681 233.793 186.77 245.731 186.77 260.461C186.77 275.19 198.681 287.132 213.385 287.132C228.085 287.132 240 275.19 240 260.461C240 245.731 228.085 233.793 213.385 233.793Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M91.7021 419.956L122.225 322.857L31.7038 362.948C13.365 371.189 0 385.748 0 407.531C0 433.241 21.0055 454.224 46.6688 454.224C71.3168 454.224 85.9104 437.255 91.7021 419.956Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M328.296 362.847L237.779 322.757L268.298 419.856C274.09 437.154 288.762 454.124 313.489 454.124C313.505 454.124 313.521 454.124 313.541 454.124C339.2 454.124 360 433.141 360 407.431C360 385.652 346.639 371.093 328.296 362.847Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M180.001 298.363C156.842 298.363 136.99 312.051 127.777 331.764H232.347C223.122 312.075 203.14 298.363 180.001 298.363Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M122.223 358.481V389.653H237.771L237.779 358.481H122.223Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M237.779 416.374H122.223V447.546H237.771L237.779 416.374Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M232.347 474.266H127.777C137.002 493.955 156.862 507.667 180.001 507.667C203.159 507.667 223.13 493.975 232.347 474.266Z" fill="white"/></svg>`;
+
+// --- State ---
+let currentLogo = 'classic';
+let targetDensity = 5;
+let randomnessFactor = 0.5;
+let panelOpen = false;
+let logos = [];
+let classicImg = null;
+let rebusImg = null;
+let imagesLoaded = 0;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// Multiple lava lamp spotlights that drift and pulse in size
+const blobs = [
+  { x: 0.45, y: 0.55, px: 0, py: 0, sx: 0.00011, sy: 0.00014, ax: 0.18, ay: 0.15, baseR: 0.55, rPhase: 0, rSpeed: 0.00007, rAmp: 0.15 },
+  { x: 0.25, y: 0.3, px: 1.8, py: 2.5, sx: 0.00009, sy: 0.00007, ax: 0.2, ay: 0.18, baseR: 0.4, rPhase: 2.1, rSpeed: 0.0001, rAmp: 0.12 },
+  { x: 0.65, y: 0.75, px: 3.7, py: 0.9, sx: 0.00007, sy: 0.00012, ax: 0.15, ay: 0.2, baseR: 0.35, rPhase: 4.3, rSpeed: 0.00006, rAmp: 0.1 },
+];
+
+// --- Load images ---
+function loadImages() {
+  classicImg = new Image();
+  classicImg.onload = () => { imagesLoaded++; if (imagesLoaded >= 2) init(); };
+  classicImg.src = 'data:image/svg+xml;base64,' + btoa(classicSVGStr);
+
+  rebusImg = new Image();
+  rebusImg.onload = () => { imagesLoaded++; if (imagesLoaded >= 2) init(); };
+  rebusImg.src = 'data:image/svg+xml;base64,' + btoa(rebusSVGStr);
+}
+
+// --- Resize ---
+let prevW = 0, prevH = 0;
+function resize() {
+  const dpr = devicePixelRatio;
+  const w = window.innerWidth * dpr;
+  const h = window.innerHeight * dpr;
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+  }
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- Helpers ---
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+// Pre-render a logo with gradient fade to an offscreen canvas
+function renderLogoWithGradient(img, w, h, gradAngle, opacity) {
+  const oc = document.createElement('canvas');
+  oc.width = Math.ceil(w);
+  oc.height = Math.ceil(h);
+  const octx = oc.getContext('2d');
+
+  // Draw the logo
+  octx.drawImage(img, 0, 0, w, h);
+
+  // Apply gradient fade (erase part of the logo with a gradient)
+  octx.globalCompositeOperation = 'destination-in';
+  const cx = w / 2, cy = h / 2;
+  const len = Math.sqrt(w * w + h * h) * 0.5;
+  const gx1 = cx - Math.cos(gradAngle) * len;
+  const gy1 = cy - Math.sin(gradAngle) * len;
+  const gx2 = cx + Math.cos(gradAngle) * len;
+  const gy2 = cy + Math.sin(gradAngle) * len;
+  const grad = octx.createLinearGradient(gx1, gy1, gx2, gy2);
+  grad.addColorStop(0, `rgba(255,255,255,1)`);
+  grad.addColorStop(0.6, `rgba(255,255,255,0.6)`);
+  grad.addColorStop(1, `rgba(255,255,255,0)`);
+  octx.fillStyle = grad;
+  octx.fillRect(0, 0, w, h);
+
+  return oc;
+}
+
+// --- Logo particle ---
+function createLogo(fadeIn) {
+  const r = randomnessFactor;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const diag = Math.sqrt(vw * vw + vh * vh);
+
+  // Size distribution matching reference: mostly large, some medium, rare small
+  // Reference SVG has ~4 groups all spanning 30-120%+ of the canvas
+  const roll = Math.random();
+  let scale;
+  if (roll < 0.15) {
+    // Small (rare): 8-20% of diagonal
+    scale = lerp(0.08, 0.2, Math.random());
+  } else if (roll < 0.45) {
+    // Medium: 20-50% of diagonal
+    scale = lerp(0.2, 0.5, Math.random());
+  } else {
+    // Large (majority): 50-120% of diagonal
+    scale = lerp(0.5, lerp(0.9, 1.2, r), Math.random());
+  }
+  const size = diag * scale;
+
+  // Opacity: very subtle, ghostly — matching the reference SVG (0.15-0.25 with overlay)
+  const baseOpacity = 0.08;
+  const opacityRange = lerp(0.02, 0.08, r);
+  const maxOpacity = Math.min(0.18, Math.max(0.05, baseOpacity + Math.random() * opacityRange));
+
+  // Rotation: varied diagonal angles
+  const angleBase = lerp(30, 30, 0) * (Math.PI / 180);
+  const angleSpread = lerp(15, 60, r) * (Math.PI / 180);
+  const rotation = (angleBase + (Math.random() - 0.5) * 2 * angleSpread) * (Math.random() > 0.5 ? 1 : -1);
+
+  // Very slow rotation speed
+  const rotSpeed = lerp(0.000015, 0.00008, r) * (Math.random() - 0.5) * 2;
+
+  // Lifespan: long and slow
+  const lifespan = lerp(30000, 55000, Math.random());
+
+  // Gradient fade direction
+  const gradAngle = Math.random() * Math.PI * 2;
+
+  return {
+    x: (Math.random() - 0.15) * vw * 1.3,
+    y: (Math.random() - 0.15) * vh * 1.3,
+    size,
+    rotation,
+    rotSpeed,
+    maxOpacity,
+    opacity: 0,
+    fadeState: 'in',
+    fadeInDuration: fadeIn ? lerp(3000, 6000, Math.random()) : lerp(4000, 8000, Math.random()),
+    fadeOutDuration: lerp(4000, 8000, Math.random()),
+    life: 0,
+    lifespan,
+    gradAngle,
+    logo: currentLogo,
+    dying: false,
+    offscreen: null, // cached offscreen canvas
+  };
+}
+
+// --- Panel ---
+function togglePanel() {
+  panelOpen = !panelOpen;
+  document.getElementById('panel').classList.toggle('open', panelOpen);
+  document.getElementById('panel-tab').classList.toggle('open', panelOpen);
+}
+
+document.addEventListener('click', (e) => {
+  if (panelOpen && !document.getElementById('panel').contains(e.target) && !document.getElementById('panel-tab').contains(e.target)) {
+    panelOpen = false;
+    document.getElementById('panel').classList.remove('open');
+    document.getElementById('panel-tab').classList.remove('open');
+  }
+});
+
+function setLogo(type) {
+  if (type === currentLogo) return;
+  currentLogo = type;
+  document.getElementById('btn-classic').classList.toggle('active', type === 'classic');
+  document.getElementById('btn-rebus').classList.toggle('active', type === 'rebus');
+  for (const l of logos) {
+    l.dying = true;
+    l.fadeState = 'out';
+  }
+}
+
+function updateDensity(val) {
+  targetDensity = parseInt(val);
+  document.getElementById('density-val').textContent = val;
+}
+
+function updateRandomness(val) {
+  randomnessFactor = parseInt(val) / 100;
+  document.getElementById('random-val').textContent = val;
+}
+
+// --- Animation ---
+let lastTime = 0;
+
+function drawBackground(t) {
+  const w = canvas.width;
+  const h = canvas.height;
+  const maxDim = Math.max(w, h);
+
+  // Dark base fill
+  ctx.fillStyle = '#073E85';
+  ctx.fillRect(0, 0, w, h);
+
+  // Primary radial gradient — this is the dominant light source
+  // Matches the reference: bright center-left glow fading to dark edges
+  const mainBlob = blobs[0];
+  mainBlob.px += mainBlob.sx;
+  mainBlob.py += mainBlob.sy;
+  mainBlob.rPhase += mainBlob.rSpeed;
+  const mx = (mainBlob.x + Math.sin(mainBlob.px) * mainBlob.ax) * w;
+  const my = (mainBlob.y + Math.cos(mainBlob.py) * mainBlob.ay) * h;
+  const mr = (mainBlob.baseR + Math.sin(mainBlob.rPhase) * mainBlob.rAmp) * maxDim;
+
+  const mainGrad = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
+  mainGrad.addColorStop(0, '#4AA2E6');
+  mainGrad.addColorStop(0.35, '#2D7CC5');
+  mainGrad.addColorStop(0.65, '#1E59A6');
+  mainGrad.addColorStop(1, '#073E85');
+  ctx.fillStyle = mainGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Secondary subtle blobs for depth
+  for (let i = 1; i < blobs.length; i++) {
+    const b = blobs[i];
+    b.px += b.sx;
+    b.py += b.sy;
+    b.rPhase += b.rSpeed;
+    const bx = (b.x + Math.sin(b.px) * b.ax) * w;
+    const by = (b.y + Math.cos(b.py) * b.ay) * h;
+    const radius = (b.baseR + Math.sin(b.rPhase) * b.rAmp) * maxDim;
+
+    const grad = ctx.createRadialGradient(bx, by, 0, bx, by, radius);
+    grad.addColorStop(0, 'rgba(74, 162, 230, 0.12)');
+    grad.addColorStop(0.4, 'rgba(45, 124, 197, 0.05)');
+    grad.addColorStop(1, 'rgba(7, 62, 133, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
+}
+
+function update(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const dt = Math.min(timestamp - lastTime, 50);
+  lastTime = timestamp;
+
+  resize();
+  const w = canvas.width;
+  const h = canvas.height;
+  const dpr = devicePixelRatio;
+
+  drawBackground(timestamp);
+
+  // Spawn new logos as needed (up to 3 per frame to fill quickly)
+  const aliveLogos = logos.filter(l => !l.dying);
+  const deficit = targetDensity - aliveLogos.length;
+  for (let s = 0; s < Math.min(3, deficit); s++) {
+    logos.push(createLogo(true));
+  }
+
+  // Update and draw
+  const toRemove = [];
+  for (let i = 0; i < logos.length; i++) {
+    const l = logos[i];
+    l.life += dt;
+
+    // Fade logic
+    if (l.fadeState === 'in') {
+      l.opacity = l.maxOpacity * Math.min(1, l.life / l.fadeInDuration);
+      if (l.life >= l.fadeInDuration) l.fadeState = 'hold';
+    } else if (l.fadeState === 'hold') {
+      l.opacity = l.maxOpacity;
+      if (l.life >= l.lifespan - l.fadeOutDuration) l.fadeState = 'out';
+    } else if (l.fadeState === 'out') {
+      if (l.dying) {
+        l.opacity -= dt * 0.0002;
+      } else {
+        const remaining = l.lifespan - l.life;
+        l.opacity = l.maxOpacity * Math.max(0, remaining / l.fadeOutDuration);
+      }
+    }
+
+    if (l.opacity <= 0) {
+      toRemove.push(i);
+      continue;
+    }
+
+    // Simple slow rotation
+    l.rotation += l.rotSpeed * dt;
+
+    // Compute draw dimensions
+    const img = l.logo === 'classic' ? classicImg : rebusImg;
+    const aspect = img.naturalWidth / img.naturalHeight;
+    let drawW, drawH;
+    if (l.logo === 'classic') {
+      drawW = l.size * dpr;
+      drawH = drawW / aspect;
+    } else {
+      drawH = l.size * dpr;
+      drawW = drawH * aspect;
+    }
+
+    // Cache offscreen render
+    if (!l.offscreen) {
+      l.offscreen = renderLogoWithGradient(img, Math.ceil(drawW), Math.ceil(drawH), l.gradAngle, 1);
+    }
+
+    // Draw with overlay blend mode
+    ctx.save();
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = Math.max(0, Math.min(1, l.opacity));
+    ctx.translate(l.x * dpr, l.y * dpr);
+    ctx.rotate(l.rotation);
+    ctx.drawImage(l.offscreen, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
+  }
+
+  // Remove dead logos
+  for (let i = toRemove.length - 1; i >= 0; i--) {
+    logos.splice(toRemove[i], 1);
+  }
+
+  requestAnimationFrame(update);
+}
+
+function init() {
+  // Stagger initial logos
+  for (let i = 0; i < targetDensity; i++) {
+    const l = createLogo(true);
+    l.life = Math.random() * l.fadeInDuration;
+    logos.push(l);
+  }
+  requestAnimationFrame(update);
+}
+
+loadImages();
+</script>
+</body>
+</html>
